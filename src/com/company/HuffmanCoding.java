@@ -1,60 +1,55 @@
 package com.company;
 
-
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Map;
-import java.util.ArrayList;
-import java.io.DataOutputStream;
-import java.io.DataInputStream;
+import java.util.*;
 
 public class HuffmanCoding {
 
-	private static SortedLinkedList<Node> calculateFrequency(File file) {
-		SortedLinkedList<Node> list = new SortedLinkedList<>();
-		HashMap<Byte, Integer> hashMap = new HashMap<>();
+	private static List<Node> calculateFrequency(File file, int chunkSize) {
+		int[] frequencyArray = new int[256 * chunkSize];
 
-		FileInputStream fileR;
-		try {
-			fileR = new FileInputStream(file);
-			long length = file.length();
-			long it = 0;
-			int character;
-			while (length > it) {
-				it += 1;
-				character = fileR.read();
-				byte currentByte = (byte) character;
-				hashMap.merge(currentByte, 1, Integer::sum);
+		try (BufferedInputStream bufferedFileR = new BufferedInputStream(new FileInputStream(file))) {
+			byte[] buffer = new byte[4096];
+			int bytesRead;
+			while ((bytesRead = bufferedFileR.read(buffer)) != -1) {
+				for (int i = 0; i < bytesRead; i++) {
+					frequencyArray[Byte.toUnsignedInt(buffer[i])]++;
+				}
 			}
-			fileR.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-		for (Map.Entry<Byte, Integer> entry : hashMap.entrySet()) {
-			list.sortedAdd(new Node (entry.getKey(), entry.getValue(), null, null));
+		List<Node> nodeList = new ArrayList<>();
+		for (int i = 0; i < frequencyArray.length; i++) {
+			if (frequencyArray[i] > 0) {
+				nodeList.add(new Node((byte) i, frequencyArray[i], null, null));
+			}
 		}
 
-		return list;
+		nodeList.sort(Comparator.comparingInt(node -> node.weight));
+
+		return nodeList;
 	}
 
-	private static Node createNode(File file) {
-		SortedLinkedList<Node> list = HuffmanCoding.calculateFrequency(file);
+	private static Node createNode(File file, int chunkSize) {
+		List<Node> nodeList = calculateFrequency(file, chunkSize);
 
-		while (list.size() >= 2) {
-			Node rightNode = list.remove();
-			Node leftNode = list.remove();
-			Node node = new Node((byte)0, rightNode.weight + leftNode.weight, rightNode, leftNode);
-			list.sortedAdd(node);
+		while (nodeList.size() >= 2) {
+			Node rightNode = nodeList.remove(0);
+			Node leftNode = nodeList.remove(0);
+			Node node = new Node((byte) 0, rightNode.weight + leftNode.weight, rightNode, leftNode);
+			nodeList.add(node);
+
+			// Re-sort the list after adding a new node
+			nodeList.sort(Comparator.comparingInt(n -> n.weight));
 		}
-		return list.getFirst();	
+
+		return nodeList.get(0);
 	}
-	
+
 	private static HashMap<Byte, boolean[]> getCoding(Node tree) {
 		HashMap<Byte, boolean[]> hashMap = new HashMap<>();
 		HuffmanCoding.getCodingRec(tree.rightNode, hashMap, new boolean[0], true);
@@ -84,7 +79,7 @@ public class HuffmanCoding {
 				for (boolean bool : entry.getValue()) {
 				 	if (bool)
 				 		fileW.write('1');
-				 	else 
+				 	else
 				 		fileW.write('0');
 				}
 				fileW.write(' ');
@@ -124,7 +119,7 @@ public class HuffmanCoding {
 		return hashMap;
 	}
 
-	public static void encode(String inputFile) {
+	public static void encode(String inputFile, int chunkSize) {
 		File file = new File(inputFile);
 		Path inputFilePath = Paths.get(inputFile);
 		String inputFileName = inputFilePath.getFileName().toString();
@@ -132,7 +127,7 @@ public class HuffmanCoding {
 		String fileExtension = inputFileName.substring(lastDotIndex + 1);
 		String outputFileName = "20011969." + inputFileName.substring(0, lastDotIndex) + "." + fileExtension +  ".hc";
 		File outputFile = new File(outputFileName);
-		Node node = HuffmanCoding.createNode(file);
+		Node node = HuffmanCoding.createNode(file, chunkSize);
 
 		HashMap<Byte, boolean[]> hashMap = HuffmanCoding.getCoding(node);
 		HuffmanCoding.write(outputFile, hashMap);
@@ -250,11 +245,11 @@ public class HuffmanCoding {
 
 			currentByte = (byte)fileR.read();
 			currentByte = (byte)fileR.read();
-			
+
 			for (int i = 0; i < 8; i += 1) {
 				if ((byte)((currentByte >> i) & 0x1) == 0)
 					list.add(false);
-				else 
+				else
 					list.add(true);
 			}
 			byte[] buffer = new byte[10];
@@ -264,7 +259,7 @@ public class HuffmanCoding {
 					for (int i = 0; i < 8; i += 1) {
 						if ((byte)((buffer[k] >> i) & 0x1) == 0)
 							list.add(false);
-						else 
+						else
 							list.add(true);
 					}
 				}
@@ -279,7 +274,7 @@ public class HuffmanCoding {
 				if (node.rightNode != null && node.leftNode != null) {
 					if (list.get(i))
 						node = node.rightNode;
-					else 
+					else
 						node = node.leftNode;
 				}
 				else {

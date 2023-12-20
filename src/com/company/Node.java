@@ -1,6 +1,5 @@
 package com.company;
 
-
 import java.lang.Comparable;
 
 public class Node implements Comparable<Node> {
@@ -15,7 +14,7 @@ public class Node implements Comparable<Node> {
 		this.rightNode = rightNode;
 		this.leftNode = leftNode;
 	}
-	
+
 	public int compareTo(Node node) {
 		return Integer.compare(this.weight, node.weight);
 	}
