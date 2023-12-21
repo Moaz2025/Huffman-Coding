@@ -3,29 +3,29 @@ package com.company;
 import java.lang.Comparable;
 
 public class Node implements Comparable<Node> {
-	public byte character;
+	public byte chunk;
 	public int weight;
-	public Node rightNode;
-	public Node leftNode;
+	public Node right;
+	public Node left;
 
-	public Node(byte character, int weight, Node rightNode, Node leftNode) {
-		this.character = character;
+	public Node(byte chunk, int weight, Node rightNode, Node leftNode) {
+		this.chunk = chunk;
 		this.weight = weight;
-		this.rightNode = rightNode;
-		this.leftNode = leftNode;
+		this.right = rightNode;
+		this.left = leftNode;
 	}
-
+	
 	public int compareTo(Node node) {
 		return Integer.compare(this.weight, node.weight);
 	}
 
 	public String toString() {
 		String string = "";
-		string += "character = " + (char)this.character + "\nweight = " + this.weight + "\n";
-		if (this.rightNode != null)
-			string += this.rightNode.toString();
-		if (this.leftNode != null)
-			string += this.leftNode.toString();
+		string += "character = " + (char)this.chunk + "\nweight = " + this.weight + "\n";
+		if (this.right != null)
+			string += this.right.toString();
+		if (this.left != null)
+			string += this.left.toString();
 		return string;
 	}
 }
