@@ -11,7 +11,7 @@ public class HuffmanCoding {
 		int[] frequencyArray = new int[256 * chunkSize];
 
 		try (BufferedInputStream bufferedFileR = new BufferedInputStream(new FileInputStream(file))) {
-			byte[] buffer = new byte[4096];
+			byte[] buffer = new byte[1024]; // Adjust the buffer size as needed
 			int bytesRead;
 			while ((bytesRead = bufferedFileR.read(buffer)) != -1) {
 				for (int i = 0; i < bytesRead; i++) {
@@ -52,39 +52,34 @@ public class HuffmanCoding {
 
 	private static HashMap<Byte, boolean[]> getCoding(Node tree) {
 		HashMap<Byte, boolean[]> hashMap = new HashMap<>();
-		HuffmanCoding.getCodingRec(tree.rightNode, hashMap, new boolean[0], true);
-		HuffmanCoding.getCodingRec(tree.leftNode, hashMap, new boolean[0], false);
+		getCodingRec(tree.rightNode, hashMap, new boolean[0], true);
+		getCodingRec(tree.leftNode, hashMap, new boolean[0], false);
 		return hashMap;
 	}
 
 	private static void getCodingRec(Node tree, HashMap<Byte, boolean[]> hashMap, boolean[] tab, boolean bool) {
-		boolean[] tmp = new boolean[tab.length+1];
-		System.arraycopy(tab, 0, tmp, 0, tab.length);
+		boolean[] tmp = Arrays.copyOf(tab, tab.length + 1);
 		tmp[tab.length] = bool;
 		if (tree.leftNode == null && tree.rightNode == null)
 			hashMap.put(tree.character, tmp);
 		else {
-			HuffmanCoding.getCodingRec(tree.rightNode, hashMap, tmp, true);
-			HuffmanCoding.getCodingRec(tree.leftNode, hashMap, tmp, false);
+			getCodingRec(tree.rightNode, hashMap, tmp, true);
+			getCodingRec(tree.leftNode, hashMap, tmp, false);
 		}
 	}
 
 	private static void write(File file, HashMap<Byte, boolean[]> hashMap) {
-		try {
-			FileOutputStream fileW = new FileOutputStream(file);
-			DataOutputStream dataW = new DataOutputStream(fileW);
+		try (FileOutputStream fileW = new FileOutputStream(file);
+			 DataOutputStream dataW = new DataOutputStream(fileW)) {
+
 			dataW.writeInt(hashMap.size());
 			for (Map.Entry<Byte, boolean[]> entry : hashMap.entrySet()) {
 				fileW.write(entry.getKey());
 				for (boolean bool : entry.getValue()) {
-				 	if (bool)
-				 		fileW.write('1');
-				 	else
-				 		fileW.write('0');
+					fileW.write(bool ? '1' : '0');
 				}
 				fileW.write(' ');
 			}
-			fileW.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -92,27 +87,26 @@ public class HuffmanCoding {
 
 	private static HashMap<Byte, boolean[]> read(File file) {
 		HashMap<Byte, boolean[]> hashMap = new HashMap<>();
-		try {
-			FileInputStream fileR = new FileInputStream(file);
-			DataInputStream dataR = new DataInputStream(fileR);
+		try (FileInputStream fileR = new FileInputStream(file);
+			 DataInputStream dataR = new DataInputStream(fileR)) {
+
 			int length = dataR.readInt();
-			byte currentByte = (byte)fileR.read();
+			byte currentByte = (byte) fileR.read();
 			while (length != 0) {
 				byte character = currentByte;
 				ArrayList<Byte> binary = new ArrayList<>();
-				currentByte = (byte)fileR.read();
+				currentByte = (byte) fileR.read();
 				while (currentByte != ' ') {
 					binary.add(currentByte);
-					currentByte = (byte)fileR.read();
+					currentByte = (byte) fileR.read();
 				}
 				boolean[] bool = new boolean[binary.size()];
 				for (int i = 0; i < binary.size(); i += 1)
 					bool[i] = binary.get(i) == '1';
 				hashMap.put(character, bool);
-				currentByte = (byte)fileR.read();
+				currentByte = (byte) fileR.read();
 				length -= 1;
 			}
-			fileR.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -121,12 +115,13 @@ public class HuffmanCoding {
 
 	public static void encode(String inputFile, int chunkSize) {
 		File file = new File(inputFile);
+		String parentDirectory = file.getParent();
 		Path inputFilePath = Paths.get(inputFile);
 		String inputFileName = inputFilePath.getFileName().toString();
 		int lastDotIndex = inputFileName.lastIndexOf('.');
 		String fileExtension = inputFileName.substring(lastDotIndex + 1);
-		String outputFileName = "20011969." + inputFileName.substring(0, lastDotIndex) + "." + fileExtension +  ".hc";
-		File outputFile = new File(outputFileName);
+		String outputFileName = "20011969." + chunkSize + "." + inputFileName.substring(0, lastDotIndex) + "." + fileExtension +  ".hc";
+		File outputFile = new File(parentDirectory, outputFileName);
 		Node node = HuffmanCoding.createNode(file, chunkSize);
 
 		HashMap<Byte, boolean[]> hashMap = HuffmanCoding.getCoding(node);
@@ -215,11 +210,12 @@ public class HuffmanCoding {
 
 	public static void decode(String inputFile) {
 		File file = new File(inputFile);
+		String parentDirectory = file.getParent();
 		Path inputFilePath = Paths.get(inputFile);
 		String inputFileName = inputFilePath.getFileName().toString();
 		int lastDotIndex = inputFileName.lastIndexOf('.');
 		String outputFileName = "extracted." + inputFileName.substring(0, lastDotIndex);
-		File outputFile = new File(outputFileName);
+		File outputFile = new File(parentDirectory, outputFileName);
 
 		HashMap<Byte, boolean[]> hashMap = read(file);
 		Node tree = getTree(hashMap);
